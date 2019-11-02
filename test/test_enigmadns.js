@@ -3,6 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const SampleContract = artifacts.require("Sample");
 const {Enigma, utils, eeConstants} = require('enigma-js/node');
+const abi = require('ethereumjs-abi');
 
 var EnigmaContract;
 if(typeof process.env.SGX_MODE === 'undefined' || (process.env.SGX_MODE != 'SW' && process.env.SGX_MODE != 'HW' )) {
@@ -40,15 +41,15 @@ contract("Sample", accounts => {
   })
 
   let task;
-  it('should execute compute task', async () => {
-    let taskFn = 'addition(uint256,uint256)';
+  it('should execute register', async () => {
+    let taskFn = 'register(string,string)';
     let taskArgs = [
-      [76, 'uint256'],
-      [17, 'uint256'],
+      ['testdomain', 'string'],
+      ['register_for_me', 'string'],
     ];
-    let taskGasLimit = 100000;
+    let taskGasLimit = 10000000;
     let taskGasPx = utils.toGrains(1);
-    const contractAddr = fs.readFileSync('test/simple_addition.txt', 'utf-8');
+    const contractAddr = fs.readFileSync('test/enigmadns.txt', 'utf-8');
     task = await new Promise((resolve, reject) => {
       enigma.computeTask(taskFn, taskArgs, taskGasLimit, taskGasPx, accounts[0], contractAddr)
         .on(eeConstants.SEND_TASK_INPUT_RESULT, (result) => resolve(result))
@@ -79,7 +80,9 @@ contract("Sample", accounts => {
     });
     expect(task.engStatus).to.equal('SUCCESS');
     task = await enigma.decryptTaskResult(task);
-    expect(parseInt(task.decryptedOutput, 16)).to.equal(76+17);
+    
+    let strResult = abi.rawDecode(["string"], Buffer.from(task.decryptedOutput, 'hex'));
+    expect(strResult[0]).to.equal('ok');
   });
 
 })

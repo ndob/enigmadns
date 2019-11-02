@@ -94,10 +94,10 @@ module.exports = async function(deployer, network, accounts) {
   });
 
   const config = {
-    filename: 'simple_addition.wasm',
+    filename: 'enigmadns.wasm',
     fn: 'construct()',
     args: '',
-    gasLimit: 100000,
+    gasLimit: 10000000, // This was 100000 for simple_addition.
     gasPrice: utils.toGrains(1),
     from: accounts[0]
   };
