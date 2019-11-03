@@ -89,6 +89,7 @@ async function makeCall(enigma, accounts, contractAddr, funcSignature, args, ret
 }
 
 let enigma = null;
+const contractAddr = fs.readFileSync('test/enigmadns.txt', 'utf-8');
 
 contract("Sample", accounts => {
     before(function() {
@@ -152,7 +153,6 @@ contract("Sample", accounts => {
     });
 
     it('should fail registering twice', async () => {
-        let contractAddr = fs.readFileSync('test/enigmadns.txt', 'utf-8');
         result = await makeCall(enigma, accounts, contractAddr, 'register(string,string)',[
             ['testdomain', 'string'],
             ['register_for_me', 'string'],
@@ -165,5 +165,37 @@ contract("Sample", accounts => {
 
         expect(result[0].toNumber()).to.equal(EnigmaDNSErrorCode.AlreadyRegistered.toNumber());
     });
+
+    it('should register, set address and resolve', async() => {
+        const expectNoError = (res) => {
+            expect(res[0].toNumber()).to.equal(EnigmaDNSErrorCode.None.toNumber());
+        };
+
+        // Register.
+        let result = await makeCall(enigma, accounts, contractAddr, 'register(string,string)', [ ['testdomain123', 'string'], ['testusername', 'string']], 'int256');
+        expectNoError(result);
+
+        // Change the domain to point an address.
+        result = await makeCall(enigma, accounts, contractAddr, 'set_target(string,string,string)', [ ['testdomain123', 'string'], ['1.1.1.1', 'string'], ['testusername', 'string']], 'int256');
+        expectNoError(result);
+
+        // Resolve address.
+        result = await makeCall(enigma, accounts, contractAddr, 'resolve(string)', [ ['testdomain123', 'string'] ], 'string');
+        expect(result[0]).to.equal('1.1.1.1');
+    });
+
+    it('should fail to set address from a different user', async() => {
+        // Register with user A.
+        let result = await makeCall(enigma, accounts, contractAddr, 'register(string,string)', [ ['testdomain123', 'string'], ['userA', 'string']], 'int256');
+
+        result = await makeCall(enigma, accounts, contractAddr, 'set_target(string,string,string)', [ ['testdomain123', 'string'], ['1.1.1.3', 'string'], ['userB', 'string']], 'int256');
+
+        expect(result[0].toNumber()).to.equal(EnigmaDNSErrorCode.Unauthorized.toNumber());
+
+        // Resolve address.
+        result = await makeCall(enigma, accounts, contractAddr, 'resolve(string)', [ ['testdomain123', 'string'] ], 'string');
+        expect(result).to.not.equal('1.1.1.3');
+    });
+
 
 })
