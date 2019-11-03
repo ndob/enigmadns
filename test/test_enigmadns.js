@@ -7,7 +7,15 @@ const {
     utils,
     eeConstants
 } = require('enigma-js/node');
+
 const abi = require('ethereumjs-abi');
+const BN = require('bn.js');
+
+const EnigmaDNSErrorCode = {
+    None: new BN(0, 10),
+    AlreadyRegistered: new BN(1, 10),
+    Unauthorized: new BN(2, 10)
+};
 
 var EnigmaContract;
 if (typeof process.env.SGX_MODE === 'undefined' || (process.env.SGX_MODE != 'SW' && process.env.SGX_MODE != 'HW')) {
@@ -139,8 +147,8 @@ contract("Sample", accounts => {
         expect(task.engStatus).to.equal('SUCCESS');
         task = await enigma.decryptTaskResult(task);
 
-        let strResult = abi.rawDecode(["string"], Buffer.from(task.decryptedOutput, 'hex'));
-        expect(strResult[0]).to.equal('ok');
+        let result = parseInt(task.decryptedOutput, 16);
+        expect(result).to.equal(EnigmaDNSErrorCode.None.toNumber());
     });
 
     it('should fail registering twice', async () => {
@@ -148,14 +156,14 @@ contract("Sample", accounts => {
         result = await makeCall(enigma, accounts, contractAddr, 'register(string,string)',[
             ['testdomain', 'string'],
             ['register_for_me', 'string'],
-        ], 'string');
+        ], 'int256');
 
         result = await makeCall(enigma, accounts, contractAddr, 'register(string,string)',[
             ['testdomain', 'string'],
             ['register_for_me', 'string'],
-        ], 'string');
+        ], 'int256');
 
-        // TODO: expect(result[0]).to.equal("failed");
+        expect(result[0].toNumber()).to.equal(EnigmaDNSErrorCode.AlreadyRegistered.toNumber());
     });
 
 })
