@@ -71,8 +71,18 @@ class EnigmaDNS {
         let result = await this.makeCall('resolve(string)', [
             [domain, 'string']
         ], 'string');
-        this.printResult("resolve", result);
+        // this.printResult("resolve", result);
         return result[0];
+    }
+
+    async setTarget(domain, target, userId) {
+        let result = await this.makeCall('set_target(string,string,string)', [
+            [domain, 'string'],
+            [target, 'string'],
+            [userId, 'string']
+        ], 'int256');
+        this.printResult("setTarget", result[0]);
+        return result[0] && result[0].toNumber() === EnigmaDNSErrorCode.None.toNumber();
     }
 
     printResult(caller, result) {
@@ -159,11 +169,15 @@ class App extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            domainToRegister: ""
+            domainToRegister: "",
+            domainToResolve: "",
         };
 
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+
+        this.handleResolveChange = this.handleResolveChange.bind(this);
+        this.handleResolve = this.handleResolve.bind(this);
     }
 
     async componentDidMount() {
@@ -176,17 +190,26 @@ class App extends Component {
         // Create redux action to initialize set state variable containing unlocked accounts
         this.props.initializeAccounts(accounts);
 
-        const contractAddress = "0x2822d89771ad2e375fcad20340901c716925c343a48e82a864d17274136f8a25";
+        const contractAddress = "0x88987af7d35eabcad95915b93bfd3d2bc3308f06b7197478b0dfca268f0497dc";
         this.enigmaDNS = new EnigmaDNS(enigma, accounts, contractAddress);
     }
 
     async tryRegister(domain) {
         console.log("Trying to register");
         if (await this.enigmaDNS.tryRegister(domain, "myname")) {
-            alert("Successfully registered:" + domain);
-        } else {
-            alert("Registration failed:" + domain);
+            let target = "1.1.1.1";
+            if (await this.enigmaDNS.setTarget(domain, target, "myname")) {
+                alert("Successfully registered:" + domain + " -> " + target);
+                return;
+            }
         }
+        alert("Registration failed");
+    }
+
+    async resolve(domain) {
+        console.log("Starting resolve");
+        let resolved = await this.enigmaDNS.resolve(domain);
+        alert("Resolved:" + resolved);
     }
 
     handleChange(event) {
@@ -197,6 +220,17 @@ class App extends Component {
 
     handleSubmit(event) {
         this.tryRegister(this.state.domainToRegister);
+        event.preventDefault();
+    }
+
+    handleResolveChange(event) {
+        this.setState({
+            domainToResolve: event.target.value
+        });
+    }
+
+    handleResolve(event) {
+        this.resolve(this.state.domainToResolve);
         event.preventDefault();
     }
 
@@ -214,6 +248,13 @@ class App extends Component {
                     <label>
                         Register domain:
                         <input type="text" value={this.state.domainToRegister} onChange={this.handleChange} />
+                    </label>
+                    <input type="submit" value="Submit" />
+                </form>
+                <form onSubmit={this.handleResolve}>
+                    <label>
+                        Resolve:
+                        <input type="text" value={this.state.domainToResolve} onChange={this.handleResolveChange} />
                     </label>
                     <input type="submit" value="Submit" />
                 </form>
