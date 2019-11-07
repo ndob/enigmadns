@@ -1,0 +1,19 @@
+{
+    "name": "webpack-webextension",
+    "version": "1.0.0",
+    "description": "A minimal example of how to use npm modules from within a WebExtension.",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "webpack"
+    },
+    "license": "MIT",
+    "devDependencies": {
+        "webpack": "^2.3.2"
+    },
+    "dependencies": {
+        "bn.js": "^5.0.0",
+        "enigma-js": "^0.3.0",
+        "ethereumjs-abi": "^0.6.8",
+        "parse-domain": "^2.3.4"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "manifest_version": 2,
+    "name": "Enigma DNS",
+    "version": "0.0.1",
+    "description": ".enigma domain handler.",
+    "icons": {
+        "32": "icons/TODO.png"
+    },
+    "background": {
+        "scripts": ["src/index.js"]
+    },
+    "permissions": [
+        "<all_urls>",
+        "webRequest",
+        "webRequestBlocking"
+    ]
+}
