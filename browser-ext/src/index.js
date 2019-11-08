@@ -1,4 +1,3 @@
-/*
 import getEnigmaInit from "./getEnigmaInit.js";
 import {
     Enigma,
@@ -6,8 +5,9 @@ import {
     eeConstants
 } from 'enigma-js';
 
-var BN = require('bn.js');
-var abi = require('ethereumjs-abi');
+const parseDomain = require("parse-domain");
+const BN = require('bn.js');
+const abi = require('ethereumjs-abi');
 
 const EnigmaDNSErrorCode = {
     None: new BN(0, 10),
@@ -16,22 +16,47 @@ const EnigmaDNSErrorCode = {
 };
 
 class EnigmaDNS {
-    constructor(enigma, accounts, contractAddress) {
-        this.enigma = enigma;
-        this.accounts = accounts;
-        this.contractAddress = contractAddress;
+    constructor() {
+        this.enigma = null;
+        this.accounts = null;
+        this.contractAddress = "0x88987af7d35eabcad95915b93bfd3d2bc3308f06b7197478b0dfca268f0497dc";
+        this.enigmaInitialized = false;
+        this.dnsCache = new Map();
+        this.initEnigma();
+    }
+
+    async initEnigma() {
+        this.enigma = await getEnigmaInit();
+        this.accounts = await this.enigma.web3.eth.getAccounts();
+        this.enigmaInitialized = true;
     }
 
     async resolve(domain) {
+        if (!this.enigmaInitialized) {
+            return "";
+        }
+
+        let cached = this.dnsCache.get(domain)
+        // TODO: Expiration.
+        if (cached) {
+            return cached;
+        }
+
         let result = await this.makeCall('resolve(string)', [
             [domain, 'string']
         ], 'string');
 
+        this.dnsCache.set(domain, result[0]);
         return result[0];
     }
 
     async makeCall(funcSignature, args, retType) {
+        if (!this.enigmaInitialized) {
+            return "";
+        }
+
         let task = null;
+        let remainingRetries = 3;
         while (true) {
             try {
                 let taskFn = funcSignature;
@@ -46,6 +71,10 @@ class EnigmaDNS {
                 break;
             } catch (err) {
                 console.log("ERROR:" + JSON.stringify(err));
+                remainingRetries--;
+                if (remainingRetries > 0) {
+                    continue;
+                }
                 return null;
             }
         }
@@ -90,20 +119,28 @@ class EnigmaDNS {
         return ret;
     }
 }
-*/
 
-const parseDomain = require("parse-domain");
-
-function redirect(requestDetails) {
-    const parsed = parseDomain(requestDetails.url, { customTlds: ["enigma"] });
+async function redirect(requestDetails) {
+    const parsed = parseDomain(requestDetails.url, {
+        customTlds: ["enigma"]
+    });
     if (parsed && parsed.tld === "enigma") {
-        console.log("Rewriting enigma url..");
+        console.log("Resolving domain from Enigma... full url:" + requestDetails.url);
+        let resolved = await g_enigmaDNS.resolve(parsed.domain);
+        console.log("Rewriting enigma url with resolved address: " + resolved);
+        // Not robust, but OK for testing. Fails e.g if
+        // https://a.enigma/foo/blaaa.enigma
+        const toBeReplaced = parsed.domain + "." + parsed.tld;
+        let rewritten = requestDetails.url.replace(toBeReplaced, resolved);
+        console.log("Redirecting to:" + rewritten);
         return {
-            redirectUrl: "http://" + parsed.domain + ".com"
+            redirectUrl: rewritten
         };
     }
 
 }
+
+let g_enigmaDNS = new EnigmaDNS();
 
 browser.webRequest.onBeforeRequest.addListener(
     redirect, {
@@ -112,5 +149,3 @@ browser.webRequest.onBeforeRequest.addListener(
     ["blocking"]
 );
 
-// const enigma = await getEnigmaInit();
-// const accounts = await enigma.web3.eth.getAccounts();
