@@ -37,11 +37,17 @@ class App extends Component {
         this.state = {
             domainToRegister: "",
             domainToResolve: "",
+            domainToChange: "",
+            domainTarget: "",
             isRequesting: false
         };
 
         this.handleChange = this.handleChange.bind(this);
         this.handleSubmit = this.handleSubmit.bind(this);
+
+        this.handleDomainChange = this.handleDomainChange.bind(this);
+        this.handleDomainTargetChange = this.handleDomainTargetChange.bind(this);
+        this.handleTargetChange = this.handleTargetChange.bind(this);
 
         this.handleResolveChange = this.handleResolveChange.bind(this);
         this.handleResolve = this.handleResolve.bind(this);
@@ -55,7 +61,7 @@ class App extends Component {
         console.log("Trying to register");
         if (await this.enigmaDNS.tryRegister(domain, "myname")) {
             let target = "1.1.1.1";
-            if (await this.enigmaDNS.setTarget(domain, target, "myname")) {
+            if (await this.changeTarget(domain, target, "myname")) {
                 alert("Successfully registered:" + domain + " -> " + target);
                 this.setState({
                     isRequesting: false,
@@ -67,6 +73,21 @@ class App extends Component {
             isRequesting: false,
         });
         alert("Registration failed");
+    }
+
+    async changeTarget(domain, target) {
+        if (await this.enigmaDNS.setTarget(domain, target, "myname")) {
+            alert("Successfully set target:" + domain + " -> " + target);
+            this.setState({
+                isRequesting: false,
+            });
+            return true;
+        }
+        this.setState({
+            isRequesting: false,
+        });
+        alert("Set target failed.");
+        return false;
     }
 
     async resolve(domain) {
@@ -88,8 +109,29 @@ class App extends Component {
         this.setState({
             isRequesting: true,
         });
-  
+
         this.tryRegister(this.state.domainToRegister);
+        event.preventDefault();
+    }
+
+    handleDomainChange(event) {
+        this.setState({
+            domainToChange: event.target.value
+        });
+    }
+
+    handleDomainTargetChange(event) {
+        this.setState({
+            domainTarget: event.target.value
+        });
+    }
+
+    handleTargetChange(event) {
+        this.setState({
+            isRequesting: true,
+        });
+
+        this.changeTarget(this.state.domainToChange, this.state.domainTarget);
         event.preventDefault();
     }
 
@@ -120,6 +162,16 @@ class App extends Component {
                     </label>
                     <input type="submit" disabled={this.state.isRequesting} value="Submit" />
                 </form>
+
+                <form onSubmit={this.handleTargetChange}>
+                    <label>
+                        Change target of an already registered domain:
+                        <input type="text" value={this.state.domainToChange} onChange={this.handleDomainChange} />
+                        <input type="text" value={this.state.domainTarget} onChange={this.handleDomainTargetChange} />
+                    </label>
+                    <input type="submit" disabled={this.state.isRequesting} value="Submit" />
+                </form>
+
                 <form onSubmit={this.handleResolve}>
                     <label>
                         Resolve:
