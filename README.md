@@ -1,7 +1,7 @@
 # enigmadns
-DNS service for .enigma addresses
+Secret contract based DNS service for [Enigma blockchain](https://enigma.co).
 
-*NOTE*: Current implementation does not do any authorization and there is no registration fee as the Enigma still lacks functionality like msg.sender and two-way communication with Ethereum.
+**NOTE**: Current implementation does not do any authorization and there is no registration fee as the Enigma still lacks functionality like msg.sender and two-way communication with Ethereum.
 
 ## Components
 ### 1. enigmadns: DNS implementation on Enigma blockchain as a secret contract.
