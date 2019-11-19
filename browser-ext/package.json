@@ -1,7 +1,7 @@
 {
-    "name": "webpack-webextension",
+    "name": "enigmadns-extension",
     "version": "1.0.0",
-    "description": "A minimal example of how to use npm modules from within a WebExtension.",
+    "description": "WebExtension that resolves .enigma domain names.",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "webpack"
@@ -11,9 +11,7 @@
         "webpack": "^2.3.2"
     },
     "dependencies": {
-        "bn.js": "^5.0.0",
-        "enigma-js": "^0.3.0",
-        "ethereumjs-abi": "^0.6.8",
+        "enigmadns-js": "file:../enigmadns-js",
         "parse-domain": "^2.3.4"
     }
 }
