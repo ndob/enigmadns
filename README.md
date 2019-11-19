@@ -50,7 +50,7 @@ cd browser-ext
 npm install
 npm run build
 ```
-### Installing
+#### Installing
 - Open Firefox and navigate to _about:debugging_.
 - Select "This Firefox".
 - Select "Load temporary add-on" and select browser-ext/addon/manifest.json.
